@@ -1,0 +1,129 @@
+#!/usr/bin/env python
+
+import os, sys, os.path, md5
+
+# Sanity checks
+if not os.getenv("HOME") or os.getenv("HOME") == "":
+	print "Error, can't find your home directory."
+	print "Make sure the HOME environment variable points to it."
+	sys.exit(-1)
+
+# Constants/global vars
+trashdir = "%s%sTrash.smv%s" % (os.getenv("HOME"), os.sep, os.sep)
+
+def revsuffix(suffix):
+	"""
+	Given a suffix, attempts to increase the 'revision'.
+
+	If given "", the suffix becomes 'a'. A suffix 'a'..'y' becomes the next letter along.
+	If the suffix is 'z', then an exception is raised.
+	"""
+	if suffix is "":
+		suffix = "a"
+	elif suffix < "z":
+		suffix = chr(ord(suffix) + 1)
+	else:
+		raise Exception
+	return suffix
+
+def makename(dir, filename, suffix):
+	"""
+	Given directory and file names and a suffix, returns a path including
+	the directory and the filename, with the suffix in the appropriate
+	place.
+
+	e.g. makename("foo", "bar.bin", "a") will return "foo/bar_a.bin".
+	"""
+	if suffix == "":
+		return dir + filename
+	tmp = os.path.splitext(filename)
+	return dir + tmp[0] + "_" + suffix + tmp[1]
+
+def hashfile(filename):
+	"""
+	Returns a binary MD5 digest of the given file.
+	"""
+	f = open(filename, "rb")
+	return md5.new(f.read()).digest()
+
+def checksamecontents(file1, file2):
+	"""
+	Uses hashfile() to compare two files. Returns true if the hashes match, false if not.
+	"""
+	file1_digest = hashfile(file1)
+	file2_digest = hashfile(file2)
+	return (file1_digest == file2_digest)
+
+def movetotrash(file):
+	try:
+		os.stat(trashdir)
+	except OSError, e:
+		print "Trashdir %s doesn't stat, trying to create it" % trashdir
+		try:
+			os.mkdir(trashdir)
+		except:
+			print "Couldn't create; aborting trash move for %s." % file
+			return True
+
+	# At this point, the directory should stat. Doesn't mean we can write
+	# to it though, so we'll be careful still.
+	try:
+		movefile(trashdir, file, doNotMoveToTrash=True)
+	except:
+		print "Unable to move %s to trash." % file
+		return True
+	return False
+
+def movefile(destdir, file, doNotMoveToTrash=False):
+	"""
+	Takes a directory and filename. Attempts to move the file to the directory. 
+	If the file already exists in the directory under that name, and the
+	doNotMoveToTrash flag is false, it attempts to move the file to the
+	trash. However, if the doNotMoveToTrash flag is true, the file is just
+	deleted.
+	"""
+	suffix = ""
+	if destdir[-1] != os.sep:
+		destdir = destdir + os.sep
+	destfile = makename(destdir, file, suffix)
+	while 1:
+		try:
+			tmp = os.stat(destfile)
+			print "%s already exists. Checking if it's a dupe..." % destfile
+			if checksamecontents(file, destfile):
+				if doNotMoveToTrash:
+					print "Found the same file already in the trash. Deleting it."
+					os.unlink(file)
+					break
+				else:
+					print "It's a dupe. Moving to trash"
+					if movetotrash(file):
+						print "\tHit a problem."
+					break
+			try:
+				suffix = revsuffix(suffix)
+			except:
+				print "Giving up, can't rename %s" % file
+				break
+			destfile = makename(destdir, file, suffix)
+		except OSError, e:
+			try:
+				os.rename(file, destfile)
+			except:
+				print "Probably safe to mv %s %s..." % (file, destfile)
+				print "\tMaybe not. We'll leave this file alone."
+			break
+
+if __name__ == "__main__":
+	if len(sys.argv) < 2:
+		print "Usage: %s files/wildcard dir" % sys.argv[0]
+		sys.exit(1)
+
+	# Note - we assume the destination is a directory.
+	destdir = sys.argv[-1]
+	if destdir[-1] != os.sep:
+		destdir = destdir + os.sep
+	files = sys.argv[1:-1]
+
+	for file in files:
+		movefile(destdir, file)
