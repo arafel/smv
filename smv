@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, os.path, md5
+import os, sys, os.path, md5, path
 
 # Sanity checks
 if not os.getenv("HOME") or os.getenv("HOME") == "":
@@ -9,7 +9,27 @@ if not os.getenv("HOME") or os.getenv("HOME") == "":
 	sys.exit(-1)
 
 # Constants/global vars
+K = 1024
+M = K * K
 trashdir = "%s%sTrash.smv%s" % (os.getenv("HOME"), os.sep, os.sep)
+trashdirlimit = 20 * M
+
+def sumdir(dir):
+	size = 0
+	for (path, dirs, files) in os.walk(dir):
+		for file in files:
+			name = os.path.join(path, file)
+			size = size + os.path.getsize(name)
+
+	return size
+
+def exists(file):
+	(dir, file) = os.path.split(file)
+	if dir == "": dir = "."
+	if file == "": file = "*"
+	p = path.path(dir)
+	files = p.files(file)
+	return len(files) > 0
 
 def revsuffix(suffix):
 	"""
@@ -115,6 +135,10 @@ def movefile(destdir, file, doNotMoveToTrash=False):
 			break
 
 if __name__ == "__main__":
+	if sumdir(trashdir) > trashdirlimit:
+		print "trashdir is %iM, limit is %iM; might want to clean it." % \
+			(sumdir(trashdir) / M, trashdirlimit / M)
+
 	if len(sys.argv) < 2:
 		print "Usage: %s files/wildcard dir" % sys.argv[0]
 		sys.exit(1)
@@ -126,4 +150,7 @@ if __name__ == "__main__":
 	files = sys.argv[1:-1]
 
 	for file in files:
-		movefile(destdir, file)
+		if exists(file):
+			movefile(destdir, file)
+		else:
+			print "Skipping %s, no such file found" % file
