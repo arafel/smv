@@ -52,8 +52,15 @@ def makename(dir, filename, suffix):
 	the directory and the filename, with the suffix in the appropriate
 	place.
 
-	e.g. makename("foo", "bar.bin", "a") will return "foo/bar_a.bin".
+	e.g. makename("foo", "baz/bar.bin", "a") will return "foo/bar_a.bin".
 	"""
+	# Sanitise
+	if dir[-1] != os.sep:
+		dir = dir + os.sep
+	# If we don't do this bit, we try to build a destname that includes any
+	# source path that got passed in. This either doesn't work, or means we
+	# put files in the wrong place. Either is bad...
+	filename = os.path.basename(filename)
 	if suffix == "":
 		return dir + filename
 	tmp = os.path.splitext(filename)
@@ -106,6 +113,7 @@ def movefile(destdir, file, doNotMoveToTrash=False):
 	if destdir[-1] != os.sep:
 		destdir = destdir + os.sep
 	destfile = makename(destdir, file, suffix)
+	print destfile
 	while 1:
 		try:
 			tmp = os.stat(destfile)
@@ -129,9 +137,11 @@ def movefile(destdir, file, doNotMoveToTrash=False):
 		except OSError, e:
 			try:
 				os.rename(file, destfile)
-			except:
+			except Exception, e:
 				print "Probably safe to mv %s %s..." % (file, destfile)
 				print "\tMaybe not. We'll leave this file alone."
+				print dir(e)
+				print e
 			break
 
 if __name__ == "__main__":
