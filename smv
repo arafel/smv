@@ -113,7 +113,6 @@ def movefile(destdir, file, doNotMoveToTrash=False):
 	if destdir[-1] != os.sep:
 		destdir = destdir + os.sep
 	destfile = makename(destdir, file, suffix)
-	print destfile
 	while 1:
 		try:
 			tmp = os.stat(destfile)
@@ -140,8 +139,6 @@ def movefile(destdir, file, doNotMoveToTrash=False):
 			except Exception, e:
 				print "Probably safe to mv %s %s..." % (file, destfile)
 				print "\tMaybe not. We'll leave this file alone."
-				print dir(e)
-				print e
 			break
 
 if __name__ == "__main__":
