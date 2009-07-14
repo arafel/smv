@@ -147,7 +147,9 @@ if __name__ == "__main__":
 			(sumdir(trashdir) / M, trashdirlimit / M)
 
 	if len(sys.argv) < 2:
-		print "Usage: %s files/wildcard dir" % sys.argv[0]
+		print "Usage: %s filespec dir" % sys.argv[0]
+		print
+		print "e.g. %s *.jpg ~/jpeg_store" % sys.argv[0]
 		sys.exit(1)
 
 	# Note - we assume the destination is a directory.
