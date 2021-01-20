@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import os, sys, os.path, md5, path
+import os, sys, os.path, md5
+from glob import glob
 
 # Sanity checks
 if not os.getenv("HOME") or os.getenv("HOME") == "":
@@ -27,8 +28,8 @@ def exists(file):
 	(dir, file) = os.path.split(file)
 	if dir == "": dir = "."
 	if file == "": file = "*"
-	p = path.path(dir)
-	files = p.files(file)
+	target = os.path.join(dir, file)
+	files = glob(target)
 	return len(files) > 0
 
 def revsuffix(suffix):
