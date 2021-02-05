@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, os.path, md5
+import os, sys, os.path, md5, shutil
 from glob import glob
 
 # Sanity checks
@@ -136,7 +136,7 @@ def movefile(destdir, file, doNotMoveToTrash=False):
 			destfile = makename(destdir, file, suffix)
 		except OSError, e:
 			try:
-				os.rename(file, destfile)
+				shutil.move(file, destfile)
 			except Exception, e:
 				print "Probably safe to mv %s %s..." % (file, destfile)
 				print "\tMaybe not. We'll leave this file alone."
